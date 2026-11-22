@@ -1002,6 +1002,7 @@ def build_js(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Control & auto-install 大肥鱼桌宠 (dafeiyu-pet.exe)")
     parser.add_argument("action", nargs="?", help="Animation/action name, e.g. 螃蟹走路")
+    parser.add_argument("--action", dest="action_opt", help="Optional flag alias for action name")
     parser.add_argument("--say", dest="say_text", help="Optional speech bubble text")
     parser.add_argument("--ms", type=int, default=3500, help="Bubble duration in milliseconds")
     parser.add_argument("--character", help="Switch character skin (e.g. v1, v2, v3, v4, v5, gpt, claude, gemini...)")
@@ -1034,6 +1035,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    action_name = args.action or args.action_opt
 
     if args.doctor:
         print(json.dumps(run_doctor(explicit_exe=args.exe, prefer_lite=args.lite), ensure_ascii=False, indent=2))
@@ -1059,7 +1061,7 @@ def main() -> int:
         exe = install_pet(prefer_lite=args.lite, quiet=args.quiet)
         if not args.quiet:
             print(f"installed: {exe}")
-        if not args.ensure and not args.action and not args.say_text and not args.raw_js and not args.status:
+        if not args.ensure and not action_name and not args.say_text and not args.raw_js and not args.status:
             return 0
 
     if args.ensure or args.install:
@@ -1091,7 +1093,7 @@ def main() -> int:
         return 0
 
     has_timer_cmd = bool(args.stop_timer or args.countdown or args.work or args.rest)
-    if not has_timer_cmd and not args.action and not args.say_text and not args.character and not args.api_action and not args.raw_js:
+    if not has_timer_cmd and not action_name and not args.say_text and not args.character and not args.api_action and not args.raw_js:
         if not args.quiet:
             print("ready")
         return 0
@@ -1099,7 +1101,7 @@ def main() -> int:
     if args.raw_js:
         js = args.raw_js
     elif args.stop_timer:
-        js = build_stop_timer_js(args.say_text, args.action)
+        js = build_stop_timer_js(args.say_text, action_name)
     elif args.countdown:
         sec = parse_duration(args.countdown, default_unit="s")
         phases = [
@@ -1108,7 +1110,7 @@ def main() -> int:
                 "sec": sec,
                 "label": args.label or "",
                 "icon": args.icon or "⏳",
-                "action": args.action or "写代码",
+                "action": action_name or "写代码",
                 "say": args.say_text or "",
             }
         ]
@@ -1146,7 +1148,7 @@ def main() -> int:
                         "sec": work_sec,
                         "label": args.label or ("工作" if rest_sec > 0 else ""),
                         "icon": args.icon or "🍅",
-                        "action": args.action or "写代码",
+                        "action": action_name or "写代码",
                         "say": args.say_text or f"开始专注 {max(1, work_sec // 60)} 分钟~",
                     }
                 )
@@ -1172,7 +1174,7 @@ def main() -> int:
             )
     else:
         js = build_js(
-            action=args.action,
+            action=action_name,
             say_text=args.say_text,
             ms=args.ms,
             character=args.character,
